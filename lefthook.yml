@@ -1,0 +1,82 @@
+# lefthook — git hooks runner.
+#
+# One-time install: `just hooks`. Every step delegates to a justfile `_hook-*`
+# recipe so tools route through the dev container the same way `just lint`
+# does — no tool is assumed to exist on the host.
+#
+# Policy: every formatter runs with `stage_fixed: true` — the author writes
+# code, lefthook fixes formatting on the way to the index, the commit captures
+# the fixed form. CI re-runs the same tools in `--check` mode.
+
+assert_lefthook_installed: true
+no_tty: false
+colors: true
+pre-commit:
+  parallel: false
+  follow: true
+  commands:
+    # ---- auto-fixers (stage_fixed = true) ----
+    cargo-fmt:
+      tags: format
+      glob: "*.rs"
+      run: just _hook-fmt {staged_files}
+      stage_fixed: true
+    cargo-sort:
+      tags: format
+      glob: "{**/Cargo.toml,Cargo.lock}"
+      run: just _hook-cargo-sort
+      stage_fixed: true
+    taplo-fmt:
+      tags: format
+      glob: "*.toml"
+      run: just _hook-taplo-fmt {staged_files}
+      stage_fixed: true
+    biome-format:
+      tags: format
+      glob: "{*.json,*.jsonc}"
+      run: just _hook-biome-format {staged_files}
+      stage_fixed: true
+    yamlfmt:
+      tags: format
+      glob: "{*.yml,*.yaml}"
+      run: just _hook-yamlfmt {staged_files}
+      stage_fixed: true
+    typos-fix:
+      tags: spell
+      run: just _hook-typos-fix {staged_files}
+      stage_fixed: true
+    # ---- checks (no auto-fix; author must address) ----
+    actionlint:
+      tags: ci
+      glob: "{.github/workflows/*.yml,.github/workflows/*.yaml}"
+      run: just _hook-actionlint {staged_files}
+    clippy:
+      tags: lint
+      glob: "*.rs"
+      run: just clippy
+    rustdoc-check:
+      tags: docs
+      glob: "*.rs"
+      run: just rustdoc-check
+pre-push:
+  # CI のゲートと検出範囲を揃える: PR を出してから CI で初めて怒られるのを防ぐ。
+  # 重要 (lefthook v2): pre-push の `@{push}` 解決が空 (新規 branch 初回 push /
+  # no-op 再 push) だと `files:` 系の filter が空振りするため、`run:` 内で
+  # workspace 全体に対する command を直接叩いて bypass する。
+  piped: true
+  commands:
+    lint:
+      tags: lint
+      run: just lint
+      only:
+        - run: git rev-list --count HEAD ^@{upstream} 2>/dev/null || git rev-list --count HEAD
+    test:
+      tags: test
+      run: just test
+      only:
+        - run: git rev-list --count HEAD ^@{upstream} 2>/dev/null || git rev-list --count HEAD
+    rustdoc-check:
+      tags: docs
+      run: just rustdoc-check
+      only:
+        - run: git rev-list --count HEAD ^@{upstream} 2>/dev/null || git rev-list --count HEAD

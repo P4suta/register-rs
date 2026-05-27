@@ -1,0 +1,36 @@
+name: register-rs
+services:
+  dev:
+    # CI publishes the prebuilt dev image to ghcr.io (.github/workflows/dev-image.yml).
+    # `docker compose pull` retrieves it in ~20s; `docker compose build` falls
+    # back to local build for Dockerfile iteration.
+    image: ghcr.io/p4suta/register-rs-dev:latest
+    build:
+      context: .
+      args:
+        USER_UID: "${UID:-1000}"
+        USER_GID: "${GID:-1000}"
+      secrets:
+        - github-token
+    working_dir: /workspace
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      INSIDE_CONTAINER: "1"
+      CARGO_TARGET_DIR: /workspace/target
+      REGISTER_LOG: "${REGISTER_LOG:-info}"
+    volumes:
+      - .:/workspace:cached
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+    init: true
+    stdin_open: true
+    tty: true
+volumes:
+  cargo-registry:
+  cargo-git:
+# GITHUB_TOKEN is mounted as a build secret (never baked into the image) so
+# cargo-binstall can authenticate to api.github.com and skip the unauthenticated
+# rate-limit cliff. Empty / missing token is tolerated.
+secrets:
+  github-token:
+    environment: GITHUB_TOKEN

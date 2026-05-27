@@ -1,0 +1,26 @@
+[default]
+locale = "en-us"
+
+[default.extend-words]
+cli = "cli"
+Cli = "Cli"
+recto = "recto"
+verso = "verso"
+parity = "parity"
+
+[files]
+extend-exclude = [
+  "target/**",
+  "artifacts/**",
+  "**/*.lock",
+  "**/*.snap",
+  "**/*.snap.new",
+  "node_modules/**",
+  "samples/**",
+]
+
+[type.toml]
+extend-glob = ["*.toml"]
+
+[type.rust]
+extend-glob = ["*.rs"]

@@ -1,0 +1,23 @@
+# Local build flags.
+#
+# `target-cpu=native` lets LLVM use the full ISA of the host (AVX2 on Kaby Lake
+# and newer, AVX-512 on Ice Lake+, NEON on Apple Silicon, etc.) — measurable
+# gains in the projection / pack / unpack inner loops which are bound by
+# memory-bandwidth-adjacent vectorised work. The trade-off is that release
+# binaries built locally won't run on older CPUs; CI builds for distribution
+# should override with `RUSTFLAGS="-C target-cpu=x86-64-v3"` or similar.
+#
+# `mold` is the fastest linker we can get on Linux (≈3–5× faster than `lld`).
+# It's installed in the dev container; the host needs `mold` on $PATH for
+# this to take effect.
+
+[build]
+# `target-cpu=native`: full host ISA (AVX2 on Kaby Lake, AVX-512 on Ice Lake+).
+# `force-frame-pointers=yes`: keeps RBP as a frame pointer so that
+#   samply / perf can do cheap, accurate stack unwinding. Cost is <2% on
+#   our hot loops (the inner loops don't touch RBP), but it transforms
+#   profile readability from "0x40a3e1+0x12" to source lines.
+rustflags = ["-C", "target-cpu=native", "-C", "force-frame-pointers=yes"]
+# `link-arg=-fuse-ld=mold` is set inside the dev container (where mold lives
+# at /usr/bin/mold) via CARGO_BUILD_RUSTFLAGS in compose.yml; we don't set it
+# here because host machines may not have mold installed.

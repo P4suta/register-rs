@@ -1,0 +1,42 @@
+version: 2
+# Dependabot is the only allowed scheduled job. Bumps Cargo crates weekly and
+# pins GitHub Actions to fresh SHAs.
+#
+# Every entry pins commit-message.prefix to "build(deps)" so the
+# `conventional commits` CI gate accepts Dependabot-authored commits.
+updates:
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "build(deps)"
+    groups:
+      tracing:
+        patterns:
+          - "tracing*"
+      image:
+        patterns:
+          - "image"
+          - "imageproc"
+      test:
+        patterns:
+          - "proptest"
+          - "tempfile"
+          - "assert_cmd"
+          - "predicates"
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"

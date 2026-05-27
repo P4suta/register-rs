@@ -1,0 +1,23 @@
+/target
+/artifacts
+/.sccache
+node_modules/
+*.tmp
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# property test regressions
+proptest-regressions/
+
+# PGO training data and merged profiles
+/pgo-data/
+/*.profdata
+
+# Real scan data is held out of the repo for copyright reasons; only the
+# tiny synthetic fixtures under samples/ are tracked.
+*.pdf
+/private/
+/scans/
+/samples/private/

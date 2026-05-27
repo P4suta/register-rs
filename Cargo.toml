@@ -1,0 +1,105 @@
+[workspace]
+resolver = "3"
+members = ["crates/register-cli", "crates/register-core"]
+default-members = ["crates/register-cli", "crates/register-core"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.95"
+version = "0.1.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/P4suta/register-rs"
+authors = ["register-rs contributors"]
+
+[workspace.dependencies]
+anyhow = "1"
+assert_cmd = "2"
+clap = { version = "4", features = ["derive"] }
+criterion = { version = "0.5", default-features = false, features = [
+  "html_reports",
+  "cargo_bench_support",
+] }
+crossbeam-channel = "0.5"
+globset = "0.4"
+image = { version = "0.25", default-features = false, features = [
+  "pnm",
+  "png",
+  "tiff",
+] }
+imageproc = { version = "0.25", default-features = false }
+indicatif = { version = "0.18", features = ["rayon"] }
+memchr = "2"
+mimalloc = { version = "0.1", default-features = false }
+predicates = "3"
+proptest = "1"
+rayon = "1"
+tempfile = "3"
+thiserror = "2"
+thread_local = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+walkdir = "2"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+
+wildcard_imports = "deny"
+mod_module_files = "deny"
+or_fun_call = "deny"
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+dbg_macro = "deny"
+print_stdout = "warn"
+print_stderr = "warn"
+allow_attributes_without_reason = "deny"
+disallowed_macros = "deny"
+disallowed_types = "deny"
+disallowed_methods = "deny"
+
+module_name_repetitions = "allow"
+multiple_crate_versions = "allow"
+cargo_common_metadata = "allow"
+redundant_pub_crate = "allow"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+unreachable_pub = "warn"
+elided_lifetimes_in_paths = "warn"
+single_use_lifetimes = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+static_mut_refs = "deny"
+missing_docs = "warn"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+opt-level = 3
+overflow-checks = false
+
+# Same fully-optimised release build, but with line-level DWARF and frame
+# pointers preserved so that `samply` / `perf` / `cargo flamegraph` produce
+# rich, addresses → source-line resolved output without re-running anything.
+# Used by `just profile`.
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"
+strip = "none"
+split-debuginfo = "off"
+
+[profile.dev]
+opt-level = 0
+debug = "full"
+
+[profile.ci]
+inherits = "dev"
+debug = "line-tables-only"
+incremental = false

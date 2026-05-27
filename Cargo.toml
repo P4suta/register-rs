@@ -50,7 +50,10 @@ wildcard_imports = "deny"
 mod_module_files = "deny"
 or_fun_call = "deny"
 unwrap_used = "deny"
-expect_used = "warn"
+# `expect("documented invariant")` IS the standard pattern for asserting
+# panic-on-violation contracts (mutex poisoning, thread panics, etc.).
+# Keep `unwrap_used` denied; that's the lazy form to police.
+expect_used = "allow"
 panic = "warn"
 todo = "warn"
 unimplemented = "warn"
@@ -66,6 +69,33 @@ module_name_repetitions = "allow"
 multiple_crate_versions = "allow"
 cargo_common_metadata = "allow"
 redundant_pub_crate = "allow"
+
+# Prose-style docs intentionally weave bare type names like `BitPage` /
+# `GrayImage` into the surrounding text; demanding backticks on every
+# mention is more friction than it buys.
+doc_markdown = "allow"
+# Marking every infallible single-line helper `const` is busywork that
+# doesn't affect runtime — most can never be evaluated at compile time
+# anyway since they take references or run inside generic code paths.
+missing_const_for_fn = "allow"
+# We're 64-bit-only by build target; the `as usize` casts on `i64` values
+# already-clipped to `>= 0` and bounded by canvas dimensions can't truncate.
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_precision_loss = "allow"
+# Pass-by-reference vs by-value for small Copy types: micro-tuning that
+# the compiler optimises across in release. The `Projection` case where
+# this fires is a 76-byte struct we don't want to copy on every render.
+trivially_copy_pass_by_ref = "allow"
+# Some doc lists start with names like `BitPage` that confuse the indent
+# detector; we already indent visually.
+doc_lazy_continuation = "allow"
+# `dx`/`dy`, `src_w`/`src_h` and similar pairs are the natural vocabulary
+# for graphics code; renaming them to satisfy this lint reduces readability.
+similar_names = "allow"
+# Block-scoped MutexGuards are dropped at the closing `}` — the lint asks
+# for an explicit `drop(guard)` inside small blocks where it's just noise.
+significant_drop_tightening = "allow"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

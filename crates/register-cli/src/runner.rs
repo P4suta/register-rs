@@ -60,7 +60,13 @@ pub(crate) fn run(args: &Args) -> Result<()> {
         return Ok(());
     }
 
-    let paper: Paper = args.paper.into();
+    let paper: Paper = args.paper_mm.map_or_else(
+        || args.paper.into(),
+        |(width_mm, height_mm)| Paper::Custom {
+            width_mm,
+            height_mm,
+        },
+    );
     let canvas = paper.canvas_at_dpi(args.dpi);
     let plan_options = PlanOptions {
         scale: !args.no_scale,

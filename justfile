@@ -149,6 +149,17 @@ to-all-pdfs:
             img2pdf "$dir"/* --output "$out"; \
         done'
 
+# Read a PDF's MediaBox via pdfinfo and print the right --paper /
+# --paper-mm to use for the post-extract `register` run. Required because
+# you can't read the trim size off the PBM the scanner pipeline emits —
+# pdftoppm renders the PDF page at your chosen DPI, so the image's pixel
+# count tells you about the PDF MediaBox + DPI, not the book's physical
+# size.
+#
+# Example: `just pdf-paper private/textbook.pdf`
+pdf-paper +pdfs:
+    {{uv}} run --with pillow python tools/pdf_paper.py {{pdfs}}
+
 # Pack BOTH the input directory and the register output into separate PDFs
 # (`*-original.pdf` and `*-registered.pdf`). Open them in two side-by-side
 # viewers to eyeball what register actually moved — the input page edges

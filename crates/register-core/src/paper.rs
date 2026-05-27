@@ -44,7 +44,7 @@
 ///
 /// All dimensions are exact in millimeters per JIS / ISO definitions; the
 /// pixel canvas is derived from them at run-time (see module docs).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub enum Paper {
     /// ISO A4 — 210 × 297 mm. Manga, magazines, scientific paper.
@@ -92,6 +92,22 @@ pub enum Paper {
     /// Pre-rounded canvas sizes: 200 DPI → 1386 × 1969; 300 DPI →
     /// 2079 × 2953; 400 DPI → 2772 × 3937; 600 DPI → 4157 × 5906.
     IsoB5,
+    /// Caller-supplied trim size in millimeters. **Required** when the book
+    /// you're processing is not one of the named standards — Japanese
+    /// publishers routinely cut their pages a few mm under the nominal
+    /// A6/四六判 etc. so the PDF's actual page dimensions, read from the
+    /// PDF's MediaBox via `pdfinfo` (or the bundled `tools/pdf_paper.py`),
+    /// are the only reliable source of truth. **The image pixel
+    /// dimensions of a PBM extracted by `pdftoppm` cannot tell you the
+    /// trim size**: pdftoppm renders the PDF page at the user-chosen DPI,
+    /// so the resulting pixel count is `pdf_page_mm × dpi / 25.4`, which
+    /// reflects the PDF's MediaBox, not the original scanner resolution.
+    Custom {
+        /// Page width in millimeters (portrait orientation).
+        width_mm: f64,
+        /// Page height in millimeters (portrait orientation).
+        height_mm: f64,
+    },
 }
 
 impl Paper {
@@ -108,6 +124,10 @@ impl Paper {
             Self::Shinsho => (103.0, 182.0),
             Self::Shiroku => (127.0, 188.0),
             Self::IsoB5 => (176.0, 250.0),
+            Self::Custom {
+                width_mm,
+                height_mm,
+            } => (width_mm, height_mm),
         }
     }
 

@@ -22,8 +22,25 @@ pub(crate) struct Args {
     /// the pixel dimensions each value produces at common DPIs. Default
     /// `shiroku` (127 × 188 mm) matches the typical Japanese hardcover
     /// novel trim — change it if you're scanning a different trim size.
-    #[arg(long, value_enum, default_value_t = PaperArg::Shiroku)]
+    ///
+    /// **Cannot determine the right trim from the PBM pixel dimensions.**
+    /// `pdftoppm` renders the PDF page at your chosen DPI, so the image's
+    /// pixel count reflects the PDF MediaBox at that DPI — not the
+    /// scanner's original resolution. Run `tools/pdf_paper.py` against
+    /// the source PDF to read its true page dimensions and pick a
+    /// matching `--paper` value (or use `--paper-mm` for non-standard
+    /// trims, which Japanese publishers routinely use).
+    #[arg(long, value_enum, default_value_t = PaperArg::Shiroku, conflicts_with = "paper_mm")]
     pub(crate) paper: PaperArg,
+
+    /// Custom paper size, in millimeters, as `WIDTHxHEIGHT` (e.g.
+    /// `--paper-mm 127x188`). Use this when the book's trim doesn't match
+    /// any named standard — the typical case for Japanese publishers,
+    /// who cut a few mm under nominal A6 / 四六判 / etc. Read the PDF's
+    /// MediaBox with `pdfinfo file.pdf` (or `tools/pdf_paper.py`) and
+    /// pass the mm value you see there.
+    #[arg(long, value_parser = parse_paper_mm)]
+    pub(crate) paper_mm: Option<(f64, f64)>,
 
     /// Output DPI used to convert paper millimeters to pixels.
     #[arg(long, default_value_t = 400)]
@@ -52,6 +69,27 @@ pub(crate) struct Args {
     /// Skip per-page skew correction (translation/scale-only output).
     #[arg(long)]
     pub(crate) no_skew: bool,
+}
+
+/// Parse the `WIDTHxHEIGHT` form for `--paper-mm`.
+fn parse_paper_mm(s: &str) -> Result<(f64, f64), String> {
+    let (w, h) = s
+        .split_once('x')
+        .ok_or_else(|| format!("expected WIDTHxHEIGHT (got `{s}`)"))?;
+    let width_mm: f64 = w
+        .trim()
+        .parse()
+        .map_err(|e| format!("bad width `{w}`: {e}"))?;
+    let height_mm: f64 = h
+        .trim()
+        .parse()
+        .map_err(|e| format!("bad height `{h}`: {e}"))?;
+    if width_mm <= 0.0 || height_mm <= 0.0 {
+        return Err(format!(
+            "dimensions must be positive (got {width_mm}x{height_mm})"
+        ));
+    }
+    Ok((width_mm, height_mm))
 }
 
 /// Paper-standard selection. Names mirror the JIS / ISO standards and the

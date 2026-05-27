@@ -81,6 +81,7 @@ missing_const_for_fn = "allow"
 # We're 64-bit-only by build target; the `as usize` casts on `i64` values
 # already-clipped to `>= 0` and bounded by canvas dimensions can't truncate.
 cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
 cast_sign_loss = "allow"
 cast_precision_loss = "allow"
 # Pass-by-reference vs by-value for small Copy types: micro-tuning that

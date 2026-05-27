@@ -48,19 +48,79 @@ def iter_pairs(orig_dir: Path, registered_dir: Path) -> Iterator[tuple[Path, Pat
             yield orig, candidate
 
 
-def ink_bbox(arr: np.ndarray) -> tuple[int, int, int, int] | None:
-    """Return `(x0, y0, x1, y1)` of the ink-pixel bbox, or `None` if no ink.
+DENSITY_DENOM = 8  # must mirror register-core::analyze
+GAP_DENOM = 32
 
-    `arr` is a 2D u8 grayscale array with 0 = ink. Returned coordinates use
-    the exclusive-bottom-right convention (so `x1 - x0` is the bbox width).
+
+def _largest_band(projection: np.ndarray, thresh: int, max_gap: int) -> tuple[int, int] | None:
+    """Longest contiguous run where `projection >= thresh`, with `max_gap`
+    consecutive below-threshold positions bridged. Mirrors the Rust
+    `densest_band` in `register-core::analyze`.
     """
-    ink = arr == 0
-    if not ink.any():
+    n = projection.size
+    if n == 0:
         return None
-    rows = np.where(ink.any(axis=1))[0]
-    cols = np.where(ink.any(axis=0))[0]
-    y0, y1 = int(rows[0]), int(rows[-1]) + 1
-    x0, x1 = int(cols[0]), int(cols[-1]) + 1
+    best: tuple[int, int] | None = None
+    run_start: int | None = None
+    last_dense: int | None = None
+
+    def close(b: tuple[int, int] | None, start: int, last: int) -> tuple[int, int] | None:
+        end = last + 1
+        length = end - start
+        if b is None or (b[1] - b[0]) < length:
+            return start, end
+        return b
+
+    for i in range(n):
+        if projection[i] >= thresh:
+            if run_start is None:
+                run_start = i
+            last_dense = i
+        elif run_start is not None and last_dense is not None and i - last_dense > max_gap:
+            best = close(best, run_start, last_dense)
+            run_start = None
+            last_dense = None
+    if run_start is not None and last_dense is not None:
+        best = close(best, run_start, last_dense)
+    return best
+
+
+def ink_bbox(arr: np.ndarray) -> tuple[int, int, int, int] | None:
+    """Return `(x0, y0, x1, y1)` of the main text block, or `None` if none.
+
+    Mirrors `register-core::analyze::main_column_bbox`: row projection +
+    column projection, each thresholded at `max / DENSITY_DENOM` and
+    reduced to the longest contiguous dense band (gap-tolerant) — so
+    page numbers, 柱, and marginalia don't inflate the bbox.
+
+    `arr` is a 2D u8 grayscale array with 0 = ink, 255 = paper. Returned
+    coordinates use the exclusive-bottom-right convention.
+    """
+    h, w = arr.shape
+    if h == 0 or w == 0:
+        return None
+    ink = arr == 0
+    row_ink = ink.sum(axis=1, dtype=np.uint32)
+    max_row = int(row_ink.max())
+    if max_row == 0:
+        return None
+    row_thresh = max(max_row // DENSITY_DENOM, 1)
+    row_gap = max(h // GAP_DENOM, 2)
+    band = _largest_band(row_ink, row_thresh, row_gap)
+    if band is None:
+        return None
+    y0, y1 = band
+
+    col_ink = ink[y0:y1].sum(axis=0, dtype=np.uint32)
+    max_col = int(col_ink.max())
+    if max_col == 0:
+        return None
+    col_thresh = max(max_col // DENSITY_DENOM, 1)
+    col_gap = max(w // GAP_DENOM, 2)
+    band = _largest_band(col_ink, col_thresh, col_gap)
+    if band is None:
+        return None
+    x0, x1 = band
     return x0, y0, x1, y1
 
 

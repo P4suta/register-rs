@@ -1,0 +1,49 @@
+[project]
+name = "register-rs-tools"
+version = "0.0.0"
+description = "Auxiliary Python scripts that accompany the register-rs Rust CLI: PDF re-packagers, before/after overlay diff renderers, etc."
+requires-python = ">=3.12"
+dependencies = ["pillow>=10", "numpy>=2"]
+
+[dependency-groups]
+dev = ["mypy>=1.13", "ruff>=0.7"]
+
+[tool.uv]
+managed = true
+
+# ----- ruff (lint + format) -----
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D203",   # incompatible with D211 (blank line before class)
+  "D213",   # incompatible with D212 (multi-line summary placement)
+  "COM812", # ruff format already handles trailing commas
+  "ISC001", # conflicts with ruff format
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tools/*.py" = [
+  "T201",   # print() is the whole point of CLI scripts
+  "S603",   # subprocess: we deliberately invoke img2pdf
+  "S607",   # partial PATH on subprocess: fine for tooling
+  "INP001", # tools/ is a namespace of scripts, not a package
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+# ----- mypy (strict type checking for tools/) -----
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+files = ["tools"]

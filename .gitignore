@@ -15,6 +15,13 @@ proptest-regressions/
 /pgo-data/
 /*.profdata
 
+# Python tooling
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+
 # Real scan data is held out of the repo for copyright reasons; only the
 # tiny synthetic fixtures under samples/ are tracked.
 *.pdf

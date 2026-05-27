@@ -81,6 +81,25 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: crate-ci/typos@7b04f660f4ee4f048d18fd341887cf28dfbedfe2 # v1.46.3
+  py-ruff:
+    name: ruff (python tools)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@a55e3aef60c50b1ad60e7706208ddf2dccea4b6c # v6.7.0
+      - run: uv tool install ruff
+      - run: ruff check tools
+      - run: ruff format --check tools
+  py-mypy:
+    name: mypy (python tools)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@a55e3aef60c50b1ad60e7706208ddf2dccea4b6c # v6.7.0
+      - run: uv tool install mypy
+      - run: mypy tools
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest

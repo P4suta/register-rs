@@ -62,8 +62,10 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
         cargo-modules \
         cargo-depgraph \
         just \
+        samply \
         taplo-cli \
-        typos-cli
+        typos-cli \
+        uv
 
 # actionlint (binary release).
 RUN curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
@@ -116,7 +118,20 @@ RUN groupadd --gid ${USER_GID} dev \
     && chown -R dev:dev /usr/local/cargo /usr/local/rustup
 
 USER dev
-ENV INSIDE_CONTAINER=1
+ENV INSIDE_CONTAINER=1 \
+    UV_LINK_MODE=copy \
+    UV_TOOL_DIR=/home/dev/.local/share/uv/tools \
+    UV_TOOL_BIN_DIR=/home/dev/.local/bin \
+    PATH=/home/dev/.local/bin:${PATH}
+
+# Python utilities baked into the image via `uv tool install`:
+#   - ruff: pure-Rust linter + formatter for tools/*.py
+#   - mypy: type-checker for tools/*.py
+#   - img2pdf: packs a directory of PBM/PNG pages into one scrubbable PDF —
+#     the only sane way to spot-check a multi-hundred-page bitonal corpus
+RUN uv tool install --quiet ruff \
+    && uv tool install --quiet mypy \
+    && uv tool install --quiet img2pdf
 
 WORKDIR /workspace
 CMD ["bash"]

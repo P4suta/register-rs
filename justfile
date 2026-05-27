@@ -13,6 +13,7 @@ lefthook := if inside == "1" { "lefthook" } else { docker_run + " lefthook" }
 taplo := if inside == "1" { "taplo" } else { docker_run + " taplo" }
 biome := if inside == "1" { "biome" } else { docker_run + " biome" }
 yamlfmt := if inside == "1" { "yamlfmt" } else { docker_run + " yamlfmt" }
+img2pdf := if inside == "1" { "img2pdf" } else { docker_run + " img2pdf" }
 sh := if inside == "1" { "bash -lc" } else { docker_run + " bash -lc" }
 
 dev_log := env_var_or_default("REGISTER_LOG", "info")
@@ -125,6 +126,94 @@ run-sample:
     @mkdir -p artifacts
     REGISTER_LOG={{dev_log}} {{cargo}} run -p register-cli -- \
         samples artifacts/sample-out --force
+
+# Roll a directory of PBM/PNG pages into a single PDF for human review.
+# Looking at a few hundred bitonal pages one-by-one is unworkable; pack
+# them so you can scrub through in a normal PDF viewer.
+#
+# Example: `just to-pdf artifacts/russell-out artifacts/russell.pdf`
+to-pdf in out:
+    {{sh}} 'mkdir -p "$(dirname "{{out}}")" && {{img2pdf}} {{in}}/* --output {{out}}'
+
+# Bulk: pack every register output directory under `artifacts/*-out/` into
+# `artifacts/*-registered.pdf`. Useful after a batch run; gives one PDF per
+# book that you can flip through to spot-check alignment.
+to-all-pdfs:
+    {{docker_run}} bash -c '\
+        set -euo pipefail; \
+        for dir in artifacts/*-out; do \
+            [ -d "$dir" ] || continue; \
+            book="$(basename "$dir" -out)"; \
+            out="artifacts/${book}-registered.pdf"; \
+            echo "==> $dir -> $out"; \
+            img2pdf "$dir"/* --output "$out"; \
+        done'
+
+# Pack BOTH the input directory and the register output into separate PDFs
+# (`*-original.pdf` and `*-registered.pdf`). Open them in two side-by-side
+# viewers to eyeball what register actually moved — the input page edges
+# wobble, the output edges don't.
+#
+# Example: `just diff-pdf private/extracted/russell artifacts/russell-out artifacts/russell`
+diff-pdf in_orig in_registered out_prefix:
+    {{sh}} 'mkdir -p "$(dirname "{{out_prefix}}")" && \
+        {{img2pdf}} {{in_orig}}/* --output {{out_prefix}}-original.pdf && \
+        {{img2pdf}} {{in_registered}}/* --output {{out_prefix}}-registered.pdf'
+
+# ----- Python visualizers (host: uv tools/, container: baked in) -----
+#
+# All three render a different "did register align anything?" view from a
+# `(before-dir, after-dir)` pair. Heavy lifting in numpy; img2pdf wraps the
+# per-page ONGs into a single scrubbable PDF.
+
+py := if inside == "1" { "python" } else { docker_run + " python" }
+uv := if inside == "1" { "uv" } else { docker_run + " uv" }
+ruff := if inside == "1" { "ruff" } else { docker_run + " ruff" }
+mypy := if inside == "1" { "mypy" } else { docker_run + " uv tool run mypy" }
+
+# Per-page color-coded overlay PDF: red = ink in original only, green = ink
+# in registered only, black = unchanged, white = paper. Shows EVERYTHING
+# (text + delta) — useful when you also want to see the page content.
+overlay-diff before after out_pdf:
+    {{uv}} run --with pillow --with numpy python tools/overlay_diff.py \
+        {{before}} {{after}} {{out_pdf}}
+
+# Per-page delta-only PDF: red+green only, no static text. White everywhere
+# nothing changed, so the diff is *just* the alignment shift. The cleanest
+# view for "show me what register did".
+delta-diff before after out_pdf:
+    {{uv}} run --with pillow --with numpy python tools/diff_pages.py \
+        --before {{before}} --after {{after}} --output {{out_pdf}}
+
+# Single-image proof: every page's ink bounding box drawn on one shared
+# canvas. Red = bboxes from the unprocessed corpus (centered on canvas),
+# green = bboxes from the registered corpus. Tight green cluster + loose
+# red cloud means alignment worked.
+bbox-overlay before after out_png:
+    {{uv}} run --with pillow --with numpy python tools/bbox_overlay.py \
+        --before {{before}} --after {{after}} --output {{out_png}}
+
+# Corpus-wide stacked composite: per-pixel ink density over every page,
+# rendered side-by-side (before | after). Sharper text on the right means
+# pages line up. Slow on 300+ page corpora.
+stack-corpus before after out_png:
+    {{uv}} run --with pillow --with numpy python tools/corpus_stack.py \
+        --before {{before}} --after {{after}} --output {{out_png}}
+
+# ----- Python lint / format / typecheck (tools/) -----
+
+py-lint:
+    {{ruff}} check tools
+
+py-fmt:
+    {{ruff}} check --fix tools
+    {{ruff}} format tools
+
+py-fmt-check:
+    {{ruff}} format --check tools
+
+py-typecheck:
+    {{mypy}} tools
 
 # ----- lint / quality gates -----
 
@@ -280,7 +369,7 @@ rustdoc-check:
     fi
 
 # Aggregated lint pipeline (mirrors the CI gates that block merges).
-lint: fmt-check clippy deny typos actionlint machete
+lint: fmt-check clippy deny typos actionlint machete py-lint py-fmt-check py-typecheck
 
 # Local CI replica.
 ci: lint test rustdoc-check

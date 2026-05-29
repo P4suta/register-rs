@@ -1,4 +1,4 @@
-# despeckle CI.
+# register-rs CI.
 #
 # Policy:
 #   - No `on: schedule`. Dependabot is the only scheduled job.
@@ -22,6 +22,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: short
+  # Override .cargo/config.toml's target-cpu=native: CI builds proc-macros on
+  # heterogeneous runners and a rust-cache restore SIGILLs an AVX-512 .so on a
+  # CPU without it. x86-64-v3 is the portable baseline the config prescribes for CI.
+  RUSTFLAGS: -C target-cpu=x86-64-v3
 jobs:
   build-test:
     name: build + test

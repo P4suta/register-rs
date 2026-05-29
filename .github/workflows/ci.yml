@@ -91,19 +91,17 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: astral-sh/setup-uv@a55e3aef60c50b1ad60e7706208ddf2dccea4b6c # v6.7.0
-      - run: uv tool install ruff
-      - run: ruff check tools
-      - run: ruff format --check tools
+      - uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4 # v6.7.0
+      - run: uv run ruff check tools
+      - run: uv run ruff format --check tools
   py-mypy:
     name: mypy (python tools)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: astral-sh/setup-uv@a55e3aef60c50b1ad60e7706208ddf2dccea4b6c # v6.7.0
-      - run: uv tool install mypy
-      - run: mypy tools
+      - uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4 # v6.7.0
+      - run: uv run mypy tools
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
@@ -147,7 +145,9 @@ jobs:
       - uses: taiki-e/install-action@f48d2f8ba2b452934c948b7be1a768079c3632ff # v2.79.6
         with:
           tool: cargo-audit
-      - run: cargo audit --deny warnings
+      # RUSTSEC-2024-0436 (paste, unmaintained) is an unactionable transitive dep
+      # via imageproc -> nalgebra -> simba; mirrors deny.toml's ignore.
+      - run: cargo audit --deny warnings --ignore RUSTSEC-2024-0436
   dependency-review:
     name: dependency review
     if: github.event_name == 'pull_request'

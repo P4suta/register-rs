@@ -10,6 +10,7 @@ version = "0.1.0"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/P4suta/register-rs"
 authors = ["register-rs contributors"]
+publish = false
 
 [workspace.dependencies]
 anyhow = "1"
@@ -28,14 +29,11 @@ image = { version = "0.25", default-features = false, features = [
 ] }
 imageproc = { version = "0.25", default-features = false }
 indicatif = { version = "0.18", features = ["rayon"] }
-memchr = "2"
 mimalloc = { version = "0.1", default-features = false }
 predicates = "3"
 proptest = "1"
-rayon = "1"
 tempfile = "3"
 thiserror = "2"
-thread_local = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 walkdir = "2"

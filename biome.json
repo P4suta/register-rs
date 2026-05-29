@@ -14,7 +14,14 @@
     }
   },
   "files": {
-    "includes": ["**/*.json", "**/*.jsonc", "!target/**", "!node_modules/**", "!artifacts/**"]
+    "includes": [
+      "**/*.json",
+      "**/*.jsonc",
+      "!target/**",
+      "!node_modules/**",
+      "!artifacts/**",
+      "!.venv/**"
+    ]
   },
   "linter": { "enabled": false }
 }

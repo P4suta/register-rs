@@ -53,9 +53,10 @@ GAP_DENOM = 32
 
 
 def _largest_band(projection: np.ndarray, thresh: int, max_gap: int) -> tuple[int, int] | None:
-    """Longest contiguous run where `projection >= thresh`, with `max_gap`
-    consecutive below-threshold positions bridged. Mirrors the Rust
-    `densest_band` in `register-core::analyze`.
+    """Longest contiguous run where `projection >= thresh`.
+
+    Up to `max_gap` consecutive below-threshold positions are bridged. Mirrors
+    the Rust `densest_band` in `register-core::analyze`.
     """
     n = projection.size
     if n == 0:

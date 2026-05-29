@@ -180,7 +180,7 @@ diff-pdf in_orig in_registered out_prefix:
 py := if inside == "1" { "python" } else { docker_run + " python" }
 uv := if inside == "1" { "uv" } else { docker_run + " uv" }
 ruff := if inside == "1" { "ruff" } else { docker_run + " ruff" }
-mypy := if inside == "1" { "mypy" } else { docker_run + " uv tool run mypy" }
+mypy := if inside == "1" { "uv run mypy" } else { docker_run + " uv run mypy" }
 
 # Per-page color-coded overlay PDF: red = ink in original only, green = ink
 # in registered only, black = unchanged, white = paper. Shows EVERYTHING

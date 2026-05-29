@@ -1107,10 +1107,8 @@ dependencies = [
  "indicatif",
  "mimalloc",
  "predicates",
- "rayon",
  "register-core",
  "tempfile",
- "thread_local",
  "tracing",
  "tracing-subscriber",
  "walkdir",
@@ -1123,7 +1121,6 @@ dependencies = [
  "criterion",
  "image",
  "imageproc",
- "memchr",
  "tempfile",
  "thiserror",
 ]

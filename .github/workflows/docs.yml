@@ -24,6 +24,12 @@ jobs:
       - name: cargo doc
         env:
           RUSTDOCFLAGS: -D warnings
+          # Override .cargo/config.toml's `target-cpu=native`: the runner builds
+          # proc-macros (e.g. thiserror_impl) with the host's full ISA, and a
+          # rust-cache restore across heterogeneous runners then SIGILLs when an
+          # AVX-512 .so lands on a CPU without it. x86-64-v3 is the portable
+          # baseline the config comment prescribes for CI.
+          RUSTFLAGS: -C target-cpu=x86-64-v3
         run: cargo doc --workspace --no-deps
       - name: write redirect index.html (stable rustdoc has no auto-index)
         run: |

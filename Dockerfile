@@ -8,7 +8,7 @@
 
 # syntax=docker/dockerfile:1.7
 
-FROM rust:1.95-bookworm AS dev
+FROM rust:1.96-bookworm AS dev
 
 ARG USER_UID=1000
 ARG USER_GID=1000

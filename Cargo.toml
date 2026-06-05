@@ -27,7 +27,7 @@ image = { version = "0.25", default-features = false, features = [
   "png",
   "tiff",
 ] }
-imageproc = { version = "0.26", default-features = false }
+imageproc = { version = "0.27", default-features = false }
 indicatif = { version = "0.18", features = ["rayon"] }
 mimalloc = { version = "0.1", default-features = false }
 predicates = "3"
